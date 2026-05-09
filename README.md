@@ -4,6 +4,8 @@ A multi-tenant SaaS platform for managing restaurant chains. A single PostgreSQL
 
 🇷🇺 Russian version: **[README_RU.md](README_RU.md)**
 
+📺 **[Watch the demo video](https://drive.google.com/file/d/1gIIhR5-smdk4KU7u1wavRLBfORp4vp5D/view?usp=sharing)**  ·  📝 **[Faculty feedback](https://docs.google.com/presentation/d/13mfplDHew13VJOsT-ZJ5-7R0tWPaB3ib52Cf2cEfbjY/edit?usp=drive_link)**  ·  🎯 **[Pitch presentation](presentation/Restaurant%20Ordering%20System%20%28ROS%29%20-%20Pitch%20Presentation.pdf)**  ·  🎓 **[Oracle Academy DB certificate](certificate_stepik/stepik-certificate-191774-27f405e.pdf)**
+
 ---
 
 ## 📋 Table of Contents
@@ -23,8 +25,8 @@ A multi-tenant SaaS platform for managing restaurant chains. A single PostgreSQL
 ## 🚀 Quick Start
 
 ```bash
-git clone https://github.com/<your-username>/restaurant_ordering_system.git
-cd restaurant_ordering_system
+git clone https://github.com/odilchon/Restaurant-Ordering-System.git
+cd Restaurant-Ordering-System
 
 cp .env.example .env       # local secrets (rotate JWT secret if needed)
 ./run.sh                   # one-shot: Postgres + schema + seed + backend + frontend
@@ -61,6 +63,12 @@ To stop everything: `./run.sh stop`.
 - **JWT** auth (24h tokens) + bcrypt
 - **Docker Compose** for local stack
 - **GitHub Actions** CI: `sqlfluff` → schema apply → `pytest` → backup/restore drill
+
+### ER Diagram
+
+The full schema as rendered by pgAdmin's ERD tool — 31 base tables grouped by tenancy, restaurant structure, menu, inventory, orders, customer experience, and audit. Source DBML in [docs/erd.dbml](docs/erd.dbml); a Mermaid version is at [docs/erd.md](docs/erd.md).
+
+![ER Diagram](docs/screenshots/erd.png)
 
 ---
 
@@ -257,11 +265,9 @@ restaurant_ordering_system/
 │   ├── seed_tandyros.py           # Bootstraps the second tenant: 2 branches, menu, staff, 230 fresh orders
 │   └── seed_drinks.py             # Adds tea + cold drinks categories to PlovPOS menu
 ├── docs/
-│   ├── DEFENSE_GUIDE.md           # What to say & show during defense
-│   ├── BEGINNERS_GUIDE.md         # System from A to Z in plain language
-│   ├── Guideforvideo.md           # Step-by-step demo-video recording script
 │   ├── architecture.md            # Mermaid sequence diagrams
 │   ├── erd.md                     # ER diagram (Mermaid)
+│   ├── erd.dbml                   # ER source for dbdiagram.io
 │   ├── normalization.md           # 1NF → 2NF → 3NF derivation
 │   ├── schema-description.md      # Table-by-table description
 │   ├── indexing-report.md         # EXPLAIN ANALYZE before/after indexes
@@ -269,8 +275,9 @@ restaurant_ordering_system/
 │   ├── backup-strategy.md         # Backup & recovery
 │   ├── security.md                # RLS, roles, JWT
 │   ├── observability.md           # What's instrumented, what's omitted, trade-offs
-│   └── screenshots/               # UI screenshots for the README
-├── presentation/pitch.md          # Marp-compatible slides
+│   └── screenshots/               # ER diagram + UI screenshots
+├── presentation/                  # Pitch presentation (PDF)
+├── certificate_stepik/            # Oracle Academy DB course certificate
 ├── docker-compose.yml             # Postgres + pgAdmin + backend + frontend
 ├── run.sh                         # One-command launcher
 ├── Makefile                       # make up / make down / make logs
@@ -285,11 +292,9 @@ restaurant_ordering_system/
 
 | File | Contents |
 |---|---|
-| [docs/DEFENSE_GUIDE.md](docs/DEFENSE_GUIDE.md) | **Defense guide**: what to say, what to show, how to answer questions |
-| [docs/BEGINNERS_GUIDE.md](docs/BEGINNERS_GUIDE.md) | System explained from scratch in plain language |
-| [docs/Guideforvideo.md](docs/Guideforvideo.md) | **Step-by-step script for recording the demo video** |
 | [docs/architecture.md](docs/architecture.md) | Architecture & sequence diagrams (Mermaid) |
 | [docs/erd.md](docs/erd.md) | ER diagram (Mermaid — renders directly on GitHub) |
+| [docs/erd.dbml](docs/erd.dbml) | ER diagram source (dbdiagram.io / DBML) |
 | [docs/normalization.md](docs/normalization.md) | 1NF → 2NF → 3NF derivation |
 | [docs/schema-description.md](docs/schema-description.md) | Table-by-table description |
 | [docs/transactions-demo.md](docs/transactions-demo.md) | ACID transaction demonstrations |
@@ -297,13 +302,13 @@ restaurant_ordering_system/
 | [docs/backup-strategy.md](docs/backup-strategy.md) | Backup & recovery strategy |
 | [docs/security.md](docs/security.md) | Security, RLS, database roles, JWT |
 | [docs/observability.md](docs/observability.md) | What's instrumented, trade-offs, what's next |
-| [presentation/pitch.md](presentation/pitch.md) | Pitch slides (Marp compatible) |
+| [presentation/](presentation/) | Pitch presentation (PDF) |
 
 ---
 
 ## ✅ Deliverables Checklist
 
-- [x] ER diagram ([docs/erd.md](docs/erd.md))
+- [x] ER diagram ([docs/screenshots/erd.png](docs/screenshots/erd.png), source [docs/erd.dbml](docs/erd.dbml))
 - [x] Normalized schema (3NF) — [db/03_schema.sql](db/03_schema.sql)
 - [x] DDL: tables, views, materialized views, functions, triggers
 - [x] SQL queries at all skill levels ([db/queries/](db/queries/))
@@ -312,10 +317,10 @@ restaurant_ordering_system/
 - [x] Backup, restore, and disaster recovery drill scripts ([db/backup/](db/backup/))
 - [x] Multi-tenant data isolation via RLS ([db/10_rls_policies.sql](db/10_rls_policies.sql))
 - [x] Working frontend integrated with backend (Next.js + FastAPI)
-- [x] Pitch slides ([presentation/pitch.md](presentation/pitch.md))
-- [ ] **Demo video link** → `[Watch demo](TBD)` *(see [docs/Guideforvideo.md](docs/Guideforvideo.md))*
-- [ ] **Faculty feedback video link** → `[Watch feedback](TBD)`
-- [ ] **Oracle Academy Database Course certificate**
+- [x] Pitch slides ([presentation/](presentation/))
+- [x] **Demo video** → [Watch demo](https://drive.google.com/file/d/1gIIhR5-smdk4KU7u1wavRLBfORp4vp5D/view?usp=sharing)
+- [x] **Faculty feedback** → [View feedback](https://docs.google.com/presentation/d/13mfplDHew13VJOsT-ZJ5-7R0tWPaB3ib52Cf2cEfbjY/edit?usp=drive_link)
+- [x] **Oracle Academy Database Course certificate** ([certificate_stepik/](certificate_stepik/))
 
 ---
 

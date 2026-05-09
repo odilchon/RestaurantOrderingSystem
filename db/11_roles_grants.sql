@@ -63,6 +63,11 @@ GRANT INSERT, UPDATE ON
     reservations,
     notifications
 TO app_waiter;
+
+-- audit_log is append-only and written by triggers running as the calling user.
+-- Every role that mutates tracked tables must be able to INSERT here.
+GRANT INSERT ON audit_log TO app_waiter;
+
 GRANT USAGE ON ALL SEQUENCES IN SCHEMA public TO app_waiter;
 ALTER DEFAULT PRIVILEGES IN SCHEMA public
     GRANT USAGE ON SEQUENCES TO app_waiter;

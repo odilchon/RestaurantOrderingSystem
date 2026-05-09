@@ -4,6 +4,8 @@ Multi-tenant SaaS-платформа для управления сетями р
 
 🇬🇧 English version: **[README.md](README.md)**
 
+📺 **[Демо-видео](https://drive.google.com/file/d/1gIIhR5-smdk4KU7u1wavRLBfORp4vp5D/view?usp=sharing)**  ·  📝 **[Фидбек преподавателя](https://docs.google.com/presentation/d/13mfplDHew13VJOsT-ZJ5-7R0tWPaB3ib52Cf2cEfbjY/edit?usp=drive_link)**  ·  🎯 **[Презентация](presentation/Restaurant%20Ordering%20System%20%28ROS%29%20-%20Pitch%20Presentation.pdf)**  ·  🎓 **[Сертификат Oracle Academy DB](certificate_stepik/stepik-certificate-191774-27f405e.pdf)**
+
 ---
 
 ## 📋 Оглавление
@@ -23,8 +25,8 @@ Multi-tenant SaaS-платформа для управления сетями р
 ## 🚀 Быстрый старт
 
 ```bash
-git clone https://github.com/<your-username>/restaurant_ordering_system.git
-cd restaurant_ordering_system
+git clone https://github.com/odilchon/Restaurant-Ordering-System.git
+cd Restaurant-Ordering-System
 
 cp .env.example .env       # локальные секреты (поверни JWT_SECRET если хочешь)
 ./run.sh                   # одна команда: Postgres + схема + seed + бекенд + фронт
@@ -61,6 +63,12 @@ cp .env.example .env       # локальные секреты (поверни J
 - **JWT** аутентификация (24-часовые токены) + bcrypt
 - **Docker Compose** для локального стека
 - **GitHub Actions** CI: `sqlfluff` → применение схемы → `pytest` → backup/restore drill
+
+### ER-диаграмма
+
+Полная схема, отрендеренная в pgAdmin ERD Tool — 31 таблица, сгруппированная по областям: tenancy, структура ресторана, меню, склад, заказы, customer experience, аудит. Исходник в DBML: [docs/erd.dbml](docs/erd.dbml); Mermaid-версия: [docs/erd.md](docs/erd.md).
+
+![ER-диаграмма](docs/screenshots/erd.png)
 
 ---
 
@@ -216,11 +224,9 @@ Drill запускается в CI на каждый push. Подробнее: [
 
 | Файл | Что внутри |
 |---|---|
-| [docs/DEFENSE_GUIDE.md](docs/DEFENSE_GUIDE.md) | **Гайд для защиты**: что говорить, что показывать, как отвечать на вопросы |
-| [docs/BEGINNERS_GUIDE.md](docs/BEGINNERS_GUIDE.md) | Система с нуля простым языком (для непрофильных) |
-| [docs/Guideforvideo.md](docs/Guideforvideo.md) | **Пошаговый сценарий записи демо-видео** |
 | [docs/architecture.md](docs/architecture.md) | Архитектура и sequence-диаграммы (Mermaid) |
 | [docs/erd.md](docs/erd.md) | ER-диаграмма (Mermaid — рендерится на GitHub) |
+| [docs/erd.dbml](docs/erd.dbml) | Исходник ER-диаграммы (dbdiagram.io / DBML) |
 | [docs/normalization.md](docs/normalization.md) | Вывод 1НФ → 2НФ → 3НФ |
 | [docs/schema-description.md](docs/schema-description.md) | Описание каждой таблицы |
 | [docs/transactions-demo.md](docs/transactions-demo.md) | ACID-демонстрации |
@@ -228,13 +234,13 @@ Drill запускается в CI на каждый push. Подробнее: [
 | [docs/backup-strategy.md](docs/backup-strategy.md) | Стратегия бэкапов |
 | [docs/security.md](docs/security.md) | Безопасность, RLS, роли, JWT |
 | [docs/observability.md](docs/observability.md) | Что инструментировано, trade-offs, что добавить дальше |
-| [presentation/pitch.md](presentation/pitch.md) | Слайды презентации (Marp) |
+| [presentation/](presentation/) | Слайды презентации (PDF) |
 
 ---
 
 ## ✅ Чек-лист сдачи
 
-- [x] ER-диаграмма ([docs/erd.md](docs/erd.md))
+- [x] ER-диаграмма ([docs/screenshots/erd.png](docs/screenshots/erd.png), исходник [docs/erd.dbml](docs/erd.dbml))
 - [x] Нормализованная схема (3НФ) — [db/03_schema.sql](db/03_schema.sql)
 - [x] DDL: таблицы, views, materialized views, функции, триггеры
 - [x] SQL-запросы всех уровней ([db/queries/](db/queries/))
@@ -243,10 +249,10 @@ Drill запускается в CI на каждый push. Подробнее: [
 - [x] Скрипты бэкапа, восстановления и DR-drill ([db/backup/](db/backup/))
 - [x] Изоляция multi-tenant через RLS ([db/10_rls_policies.sql](db/10_rls_policies.sql))
 - [x] Работающий фронтенд с интеграцией в бекенд (Next.js + FastAPI)
-- [x] Слайды ([presentation/pitch.md](presentation/pitch.md))
-- [ ] **Ссылка на демо-видео** → `[Смотреть](TBD)` *(см. [docs/Guideforvideo.md](docs/Guideforvideo.md))*
-- [ ] **Ссылка на видео фидбека преподавателя** → `[Смотреть](TBD)`
-- [ ] **Сертификат Oracle Academy Database Course**
+- [x] Слайды ([presentation/](presentation/))
+- [x] **Демо-видео** → [Смотреть](https://drive.google.com/file/d/1gIIhR5-smdk4KU7u1wavRLBfORp4vp5D/view?usp=sharing)
+- [x] **Фидбек преподавателя** → [Смотреть](https://docs.google.com/presentation/d/13mfplDHew13VJOsT-ZJ5-7R0tWPaB3ib52Cf2cEfbjY/edit?usp=drive_link)
+- [x] **Сертификат Oracle Academy Database Course** ([certificate_stepik/](certificate_stepik/))
 
 ---
 

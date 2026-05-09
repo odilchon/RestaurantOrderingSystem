@@ -109,7 +109,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const logout = useCallback(() => {
     clearToken();
     setMe(null);
-    if (typeof window !== "undefined") window.location.href = "/login";
+    if (typeof window !== "undefined") {
+      window.localStorage.removeItem("ros_filters");
+      window.location.href = "/login";
+    }
   }, []);
 
   // Persist filters across route changes
@@ -134,6 +137,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
       JSON.stringify({ period, branchId }),
     );
   }, [period, branchId]);
+
+  // If the persisted branchId belongs to a different tenant (e.g. after
+  // re-login as another owner), drop it once the real branch list arrives.
+  useEffect(() => {
+    if (branchesLoading || branches.length === 0) return;
+    if (branchId && !branches.some((b) => b.branch_id === branchId)) {
+      setBranchId(null);
+    }
+  }, [branches, branchesLoading, branchId]);
 
   const value: AppContextValue = useMemo(
     () => ({
