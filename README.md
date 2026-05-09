@@ -319,7 +319,7 @@ restaurant_ordering_system/
 - [x] Working frontend integrated with backend (Next.js + FastAPI)
 - [x] Pitch slides ([presentation/](presentation/))
 - [x] **Demo video** → [Watch demo](https://drive.google.com/file/d/1gIIhR5-smdk4KU7u1wavRLBfORp4vp5D/view?usp=sharing)
-- [x] **Faculty feedback** → [View feedback]([https://docs.google.com/presentation/d/13mfplDHew13VJOsT-ZJ5-7R0tWPaB3ib52Cf2cEfbjY/edit?usp=drive_link](https://drive.google.com/file/d/15rMY1EZlYLhy9hNRW5zRtz6AvK0CiMPo/view?usp=sharing))
+- [x] **Faculty feedback** → [View feedback](https://drive.google.com/file/d/15rMY1EZlYLhy9hNRW5zRtz6AvK0CiMPo/view?usp=sharing)
 - [x] **Oracle Academy Database Course certificate** ([certificate_stepik/](certificate_stepik/))
 
 ---
