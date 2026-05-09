@@ -1,0 +1,12 @@
+line-length = 100
+target-version = "py311"
+
+[lint]
+select = ["E", "F", "W", "I", "B", "UP", "N", "SIM", "RUF"]
+ignore = [
+    "E501",   # line too long
+    "B008",   # function call in arg default (FastAPI Depends() convention)
+    "RUF001", # ambiguous unicode in identifiers (Cyrillic in code)
+    "RUF002", # ambiguous unicode in docstrings (Cyrillic in docstrings)
+    "RUF003", # ambiguous unicode in comments (Cyrillic in comments)
+]

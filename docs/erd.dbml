@@ -1,0 +1,438 @@
+// Restaurant Ordering System — ER diagram source
+// Paste into https://dbdiagram.io/d to render the PNG that goes into docs/erd.png
+//
+// Syntax: https://dbml.dbdiagram.io/docs/
+//
+// Organized in 7 groups matching docs/schema-description.md:
+//   1. Tenancy & auth
+//   2. Restaurant structure
+//   3. Menu & recipes
+//   4. Inventory & procurement
+//   5. Orders, items & payments
+//   6. Customer experience
+//   7. Operations & audit
+
+Project restaurant_ordering_system {
+  database_type: 'PostgreSQL'
+  Note: '''
+    Multi-tenant SaaS backend for restaurant chains.
+    31 base tables + 15 monthly partitions on `orders`.
+  '''
+}
+
+// ============================================================================
+// 1. TENANCY & AUTH
+// ============================================================================
+
+Table tenants {
+  tenant_id uuid [pk]
+  slug citext [unique, not null]
+  legal_name varchar
+  display_name varchar [not null]
+  contact_email citext
+  contact_phone varchar
+  country_code char(2)
+  default_currency char(3)
+  settings jsonb
+  is_active boolean [default: true]
+  created_at timestamptz
+  updated_at timestamptz
+  Note: 'SaaS clients — restaurant brands'
+}
+
+Table users {
+  user_id uuid [pk]
+  email citext [unique]
+  phone varchar
+  password_hash varchar [not null]
+  full_name varchar [not null]
+  locale char(2)
+  is_active boolean
+  created_at timestamptz
+  updated_at timestamptz
+  Note: 'All system users: admins, staff, customers'
+}
+
+Table user_roles {
+  user_role_id uuid [pk]
+  user_id uuid [ref: > users.user_id, not null]
+  tenant_id uuid [ref: > tenants.tenant_id]
+  branch_id uuid [ref: > branches.branch_id]
+  role user_role_enum [not null]
+  granted_at timestamptz
+  granted_by uuid [ref: > users.user_id]
+  Note: 'User ↔ tenant ↔ branch ↔ role (M:N with scope)'
+}
+
+Table sessions {
+  session_id uuid [pk]
+  user_id uuid [ref: > users.user_id, not null]
+  ip_address inet
+  user_agent varchar
+  expires_at timestamptz
+  revoked_at timestamptz
+  created_at timestamptz
+}
+
+// ============================================================================
+// 2. RESTAURANT STRUCTURE
+// ============================================================================
+
+Table branches {
+  branch_id uuid [pk]
+  tenant_id uuid [ref: > tenants.tenant_id, not null]
+  name varchar [not null]
+  address varchar
+  city varchar
+  latitude numeric
+  longitude numeric
+  operating_hours jsonb
+  is_active boolean
+  created_at timestamptz
+  updated_at timestamptz
+}
+
+Table zones {
+  zone_id uuid [pk]
+  branch_id uuid [ref: > branches.branch_id, not null]
+  name varchar [not null]
+  zone_type varchar
+  capacity int
+}
+
+Table restaurant_tables {
+  table_id uuid [pk]
+  branch_id uuid [ref: > branches.branch_id, not null]
+  zone_id uuid [ref: > zones.zone_id]
+  table_number varchar [not null]
+  capacity int
+  status table_status
+  qr_code varchar
+
+  indexes {
+    (branch_id, table_number) [unique]
+  }
+}
+
+// ============================================================================
+// 3. MENU & RECIPES
+// ============================================================================
+
+Table categories {
+  category_id uuid [pk]
+  tenant_id uuid [ref: > tenants.tenant_id, not null]
+  parent_id uuid [ref: > categories.category_id]
+  name varchar [not null]
+  display_order int
+  is_active boolean
+  Note: 'Self-referencing hierarchical categories'
+}
+
+Table menu_items {
+  menu_item_id uuid [pk]
+  tenant_id uuid [ref: > tenants.tenant_id, not null]
+  category_id uuid [ref: > categories.category_id, not null]
+  sku varchar
+  name varchar [not null]
+  description text
+  base_price numeric(10,2) [not null]
+  preparation_minutes int
+  calories int
+  photo_url varchar
+  search_vector tsvector
+  is_active boolean
+  created_at timestamptz
+  updated_at timestamptz
+  Note: 'Menu items with FTS vector (updated via trigger)'
+}
+
+Table menu_item_prices {
+  price_id uuid [pk]
+  menu_item_id uuid [ref: > menu_items.menu_item_id, not null]
+  price numeric(10,2) [not null]
+  valid_from timestamptz [not null]
+  valid_to timestamptz
+  changed_by uuid [ref: > users.user_id]
+  Note: 'Price history — valid_to IS NULL = current'
+}
+
+Table menu_item_translations {
+  translation_id uuid [pk]
+  menu_item_id uuid [ref: > menu_items.menu_item_id, not null]
+  locale char(2) [not null]
+  name varchar [not null]
+  description text
+
+  indexes {
+    (menu_item_id, locale) [unique]
+  }
+}
+
+Table menu_item_ingredients {
+  menu_item_id uuid [ref: > menu_items.menu_item_id]
+  ingredient_id uuid [ref: > ingredients.ingredient_id]
+  quantity numeric(10,3) [not null]
+  is_optional boolean
+
+  indexes {
+    (menu_item_id, ingredient_id) [pk]
+  }
+  Note: 'M:N recipe — used by fn_place_order'
+}
+
+Table menu_item_branch_availability {
+  menu_item_id uuid [ref: > menu_items.menu_item_id]
+  branch_id uuid [ref: > branches.branch_id]
+  is_available boolean
+  price_override numeric(10,2)
+
+  indexes {
+    (menu_item_id, branch_id) [pk]
+  }
+}
+
+// ============================================================================
+// 4. INVENTORY & PROCUREMENT
+// ============================================================================
+
+Table ingredients {
+  ingredient_id uuid [pk]
+  tenant_id uuid [ref: > tenants.tenant_id, not null]
+  name varchar [not null]
+  unit varchar [not null]
+  reorder_level numeric(14,3)
+  allergens "text[]"
+  created_at timestamptz
+}
+
+Table inventory {
+  branch_id uuid [ref: > branches.branch_id]
+  ingredient_id uuid [ref: > ingredients.ingredient_id]
+  quantity numeric(14,3) [not null]
+  updated_at timestamptz
+
+  indexes {
+    (branch_id, ingredient_id) [pk]
+  }
+  Note: 'Current stock levels per branch'
+}
+
+Table inventory_movements {
+  movement_id uuid [pk]
+  branch_id uuid [ref: > branches.branch_id, not null]
+  ingredient_id uuid [ref: > ingredients.ingredient_id, not null]
+  movement_type inv_movement_type [not null]
+  delta numeric(14,3) [not null]
+  reference_type varchar
+  reference_id uuid
+  created_at timestamptz
+  created_by uuid [ref: > users.user_id]
+  Note: 'Append-only event source for stock changes'
+}
+
+Table suppliers {
+  supplier_id uuid [pk]
+  tenant_id uuid [ref: > tenants.tenant_id, not null]
+  name varchar [not null]
+  contact_email citext
+  contact_phone varchar
+  payment_terms varchar
+  is_active boolean
+}
+
+Table purchase_orders {
+  purchase_order_id uuid [pk]
+  tenant_id uuid [ref: > tenants.tenant_id, not null]
+  branch_id uuid [ref: > branches.branch_id, not null]
+  supplier_id uuid [ref: > suppliers.supplier_id, not null]
+  status purchase_status
+  ordered_at timestamptz
+  expected_at timestamptz
+  received_at timestamptz
+  total_amount numeric(14,2)
+  notes text
+}
+
+Table purchase_order_items {
+  po_item_id uuid [pk]
+  purchase_order_id uuid [ref: > purchase_orders.purchase_order_id, not null]
+  ingredient_id uuid [ref: > ingredients.ingredient_id, not null]
+  quantity numeric(14,3) [not null]
+  unit_price numeric(14,2) [not null]
+}
+
+// ============================================================================
+// 5. ORDERS, ITEMS & PAYMENTS
+// ============================================================================
+
+Table orders {
+  order_id uuid
+  tenant_id uuid [ref: > tenants.tenant_id, not null]
+  branch_id uuid [ref: > branches.branch_id, not null]
+  table_id uuid [ref: > restaurant_tables.table_id]
+  waiter_id uuid [ref: > users.user_id]
+  customer_id uuid [ref: > users.user_id]
+  order_number varchar [not null]
+  status order_status [not null]
+  order_type order_type [not null]
+  subtotal numeric(12,2)
+  tax_amount numeric(12,2)
+  service_charge numeric(12,2)
+  discount_amount numeric(12,2)
+  total_amount numeric(12,2)
+  notes text
+  created_at timestamptz
+  updated_at timestamptz
+
+  indexes {
+    (order_id, created_at) [pk]
+  }
+  Note: '''
+    PARTITIONED BY RANGE (created_at) monthly.
+    PK is composite (order_id, created_at) — required for partitioning.
+  '''
+}
+
+Table order_items {
+  order_id uuid [not null]
+  order_created_at timestamptz [not null]
+  line_no int [not null]
+  menu_item_id uuid [ref: > menu_items.menu_item_id, not null]
+  name_snapshot varchar [not null]
+  unit_price_snapshot numeric(10,2) [not null]
+  quantity int [not null]
+  line_total numeric(12,2) [not null]
+  special_requests text
+
+  indexes {
+    (order_id, order_created_at, line_no) [pk]
+  }
+  Note: 'Snapshots name + price to preserve historical receipts'
+}
+
+Ref: order_items.(order_id, order_created_at) > orders.(order_id, created_at)
+
+Table order_status_history {
+  history_id uuid [pk]
+  order_id uuid [not null]
+  order_created_at timestamptz [not null]
+  old_status order_status
+  new_status order_status [not null]
+  changed_by uuid [ref: > users.user_id]
+  changed_at timestamptz
+  note text
+}
+
+Ref: order_status_history.(order_id, order_created_at) > orders.(order_id, created_at)
+
+Table payments {
+  payment_id uuid [pk]
+  order_id uuid [not null]
+  order_created_at timestamptz [not null]
+  method payment_method [not null]
+  status payment_status [not null]
+  amount numeric(12,2) [not null]
+  tip numeric(12,2)
+  external_transaction_id varchar
+  processed_by uuid [ref: > users.user_id]
+  created_at timestamptz
+}
+
+Ref: payments.(order_id, order_created_at) > orders.(order_id, created_at)
+
+Table refunds {
+  refund_id uuid [pk]
+  payment_id uuid [ref: > payments.payment_id, not null]
+  amount numeric(12,2) [not null]
+  reason text
+  approved_by uuid [ref: > users.user_id]
+  created_at timestamptz
+}
+
+// ============================================================================
+// 6. CUSTOMER EXPERIENCE
+// ============================================================================
+
+Table reservations {
+  reservation_id uuid [pk]
+  tenant_id uuid [ref: > tenants.tenant_id, not null]
+  branch_id uuid [ref: > branches.branch_id, not null]
+  table_id uuid [ref: > restaurant_tables.table_id, not null]
+  customer_id uuid [ref: > users.user_id]
+  customer_name varchar
+  customer_phone varchar
+  party_size int
+  reserved_period tstzrange [not null]
+  status reservation_status
+  notes text
+  created_at timestamptz
+  Note: 'EXCLUDE USING gist (table_id =, reserved_period &&) prevents overlaps'
+}
+
+Table loyalty_accounts {
+  loyalty_account_id uuid [pk]
+  tenant_id uuid [ref: > tenants.tenant_id, not null]
+  customer_id uuid [ref: > users.user_id, unique, not null]
+  points_balance int [default: 0]
+  tier loyalty_tier
+  joined_at timestamptz
+}
+
+Table loyalty_transactions {
+  transaction_id uuid [pk]
+  loyalty_account_id uuid [ref: > loyalty_accounts.loyalty_account_id, not null]
+  txn_type loyalty_txn_type [not null]
+  points int [not null]
+  order_id uuid
+  description varchar
+  created_at timestamptz
+}
+
+Table reviews {
+  review_id uuid [pk]
+  tenant_id uuid [ref: > tenants.tenant_id, not null]
+  branch_id uuid [ref: > branches.branch_id, not null]
+  order_id uuid
+  order_created_at timestamptz
+  customer_id uuid [ref: > users.user_id]
+  rating int [note: 'CHECK rating BETWEEN 1 AND 5']
+  comment text
+  created_at timestamptz
+}
+
+// ============================================================================
+// 7. OPERATIONS & AUDIT
+// ============================================================================
+
+Table shifts {
+  shift_id uuid [pk]
+  branch_id uuid [ref: > branches.branch_id, not null]
+  user_id uuid [ref: > users.user_id, not null]
+  clock_in timestamptz [not null]
+  clock_out timestamptz
+  break_minutes int
+  notes text
+}
+
+Table audit_log {
+  audit_id bigint [pk, increment]
+  table_name varchar [not null]
+  row_pk jsonb [not null]
+  operation char(1) [not null]
+  old_data jsonb
+  new_data jsonb
+  changed_by uuid
+  changed_at timestamptz
+  Note: 'Generic audit via single trigger fn_audit_row_change on 13 tables'
+}
+
+Table notifications {
+  notification_id uuid [pk]
+  tenant_id uuid [ref: > tenants.tenant_id]
+  user_id uuid [ref: > users.user_id]
+  channel notification_channel [not null]
+  payload jsonb [not null]
+  sent_at timestamptz
+  read_at timestamptz
+  created_at timestamptz
+}

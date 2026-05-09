@@ -1,0 +1,60 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Node
+node_modules/
+.next/
+dist/
+build/
+*.log
+
+# Env & secrets
+.env
+.env.local
+backend/.env
+frontend/.env.local
+*.pem
+*.key
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# DB artifacts
+*.dump
+*.sql.bak
+backups/
+pgdata/
+pgadmin_data/
+
+# Runtime
+.run/
+*.pid
+
+# Coverage
+.coverage
+htmlcov/
+coverage.xml
+
+# Docs build
+docs/_build/
+site/
+
+# Project-specific binaries (keep source docs)
+!TZ.txt
+
+# Course materials (private)
+Syllabus*.docx
+*.docx
